@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mastery Quest</title>
+<meta name="description" content="A game-style tracker for a 10-year, 21-plan mastery journey.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23141a35'/%3E%3Cpath d='M9 22V10l7 7 7-7v12' stroke='%230e9aa7' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: a player card on top, four tabs below (Today, Plans, Journey, Log); one column on phones. Palette follows the Mastery Curriculum PDFs: navy ink, slate, teal, with gold for rewards. */
+:root{
+  --bg:#f3f5fa; --surface:#ffffff; --surface-2:#edf0f7; --ink:#141a35; --ink-2:#4d5677; --ink-3:#7a83a3; --line:#dce1ec;
+  --accent:#0e9aa7; --accent-ink:#0a7a85; --accent-soft:#d8f1f3; --gold:#b97c0c; --gold-soft:#fbefd6;
+  --solve:#2a3f7a; --tech:#0e9aa7; --think:#6b5bd6; --habit:#c27f0d;
+  --good:#1f9461; --bad:#c4492f; --shadow:0 1px 2px rgba(20,26,53,.06),0 6px 20px rgba(20,26,53,.06);
+  --f-display:"Sora",ui-sans-serif,system-ui,sans-serif; --f-body:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1124; --surface:#151a31; --surface-2:#1c2240; --ink:#e7eaf6; --ink-2:#a3abc9; --ink-3:#737c9e; --line:#283050;
+  --accent:#2cc3cf; --accent-ink:#62d7e0; --accent-soft:#163a45; --gold:#f0b43c; --gold-soft:#3a2f17;
+  --solve:#8299e6; --tech:#2cc3cf; --think:#a294f4; --habit:#f0b43c; --good:#3cc285; --bad:#ef7a5e; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1124; --surface:#151a31; --surface-2:#1c2240; --ink:#e7eaf6; --ink-2:#a3abc9; --ink-3:#737c9e; --line:#283050;
+  --accent:#2cc3cf; --accent-ink:#62d7e0; --accent-soft:#163a45; --gold:#f0b43c; --gold-soft:#3a2f17;
+  --solve:#8299e6; --tech:#2cc3cf; --think:#a294f4; --habit:#f0b43c; --good:#3cc285; --bad:#ef7a5e; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25); color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1100px;margin:0 auto;padding-block:20px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+h2{font-size:1.2rem;font-weight:600} h3{font-size:1rem;font-weight:600}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-2)} .faint{color:var(--ink-3)}
+.label{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.pad{padding:18px}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.grid{display:grid;gap:16px}
+.bar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.bar>i{display:block;height:100%;border-radius:inherit;background:var(--accent);transition:width .5s ease}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:.75rem;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--surface-2);color:var(--ink-2);white-space:nowrap}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s,transform .05s}
+.btn:hover{border-color:var(--ink-3)} .btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .btn.primary{color:#062126}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn.primary{color:#062126}}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink-2);padding:6px 8px}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn.danger{color:var(--bad)}
+.banner{display:none;margin-bottom:14px;padding:10px 14px;border-radius:10px;background:var(--gold-soft);color:var(--ink);font-size:.9rem}
+.banner.show{display:block}
+
+/* Player card */
+.player{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center;padding:20px;margin-bottom:16px;position:relative;overflow:hidden}
+.player::after{content:"";position:absolute;inset:auto -60px -80px auto;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,var(--accent-soft),transparent 70%);pointer-events:none}
+.ring{position:relative;width:104px;height:104px;flex:none}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .lv{position:absolute;inset:0;display:grid;place-items:center;text-align:center;line-height:1.05}
+.ring .lv b{font-family:var(--f-display);font-size:2rem;font-weight:700;display:block}
+.ring .lv span{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;position:relative;z-index:1}
+.stat .v{font-family:var(--f-display);font-size:1.45rem;font-weight:700;line-height:1.15}
+.stat .v small{font-size:.8rem;font-weight:500;color:var(--ink-3)}
+.stat .s{font-size:.8rem;color:var(--ink-2)}
+.hello{grid-column:1/-1;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline;position:relative;z-index:1}
+.hello h1{font-size:1.5rem;font-weight:700}
+.xpline{grid-column:1/-1;position:relative;z-index:1}
+.xpline .bar{height:10px}
+.xpline .bar>i{background:linear-gradient(90deg,var(--accent),var(--gold))}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:16px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;overflow-x:auto;scrollbar-width:none}
+.tabs a{flex:1;text-align:center;padding:9px 12px;border-radius:9px;color:var(--ink-2);text-decoration:none;font-weight:600;white-space:nowrap}
+.tabs a[aria-current="page"]{background:var(--ink);color:var(--surface)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+
+/* Today */
+.today{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);align-items:start}
+.quest{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.quest:first-of-type{border-top:0}
+.quest .slot{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-family:var(--f-mono);font-weight:600;font-size:.8rem;color:#fff}
+.quest .t{font-weight:600}
+.quest .m{font-size:.82rem;color:var(--ink-2)}
+.form{display:grid;gap:12px}
+.field{display:grid;gap:5px;min-width:0}
+.field label{font-size:.8rem;font-weight:600;color:var(--ink-2)}
+.input{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 11px}
+.input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+textarea.input{min-height:76px;resize:vertical}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface-2);border-radius:99px;padding:4px 11px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:var(--f-mono)}
+.chip:hover,.chip.on{border-color:var(--accent);color:var(--accent-ink)}
+.entry{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;padding:11px 0;border-top:1px solid var(--line);align-items:start}
+.entry:first-child{border-top:0}
+.entry .h{font-family:var(--f-mono);font-weight:600;min-width:46px}
+.entry .n{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.9rem;color:var(--ink-2)}
+.empty{text-align:center;padding:26px 12px;color:var(--ink-2)}
+.empty b{display:block;font-family:var(--f-display);color:var(--ink);font-size:1.05rem;margin-bottom:4px}
+
+/* Plans */
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.plans{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.plan{padding:16px;display:grid;gap:10px;align-content:start}
+.plan header{display:flex;justify-content:space-between;gap:10px;align-items:start}
+.plan .rank{font-size:.72rem}
+.phases{display:grid;gap:2px;margin-top:2px}
+.phase{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:9px;align-items:center;padding:6px 6px;border-radius:8px;cursor:pointer}
+.phase:hover{background:var(--surface-2)}
+.phase input{width:17px;height:17px;accent-color:var(--accent);margin:0;cursor:pointer}
+.phase .c{font-family:var(--f-mono);font-size:.75rem;color:var(--ink-3);width:22px}
+.phase .pn{font-size:.88rem;min-width:0}
+.phase.done .pn{color:var(--ink-3);text-decoration:line-through;text-decoration-color:var(--line)}
+.phase .d{font-size:.72rem;color:var(--good);font-weight:600;white-space:nowrap}
+.more{justify-self:start}
+
+/* Journey */
+.gantt{overflow-x:auto}
+.gantt-inner{min-width:760px}
+.yrow{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.yrow:first-child{border-top:0}
+.ylab{font-size:.8rem;font-weight:600}
+.ylab span{display:block;font-weight:400;color:var(--ink-3);font-size:.72rem}
+.lanes{display:grid;gap:3px;position:relative}
+.lane{position:relative;height:20px;background:var(--surface-2);border-radius:6px;overflow:hidden}
+.seg{position:absolute;top:0;bottom:0;border-radius:5px;font-size:.68rem;font-weight:600;color:#fff;padding:0 6px;display:flex;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:2px solid var(--surface)}
+.seg.past{opacity:.55}
+.nowline{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--bad);z-index:2;border-radius:2px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--ink-2)}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.ms{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.ms:first-child{border-top:0}
+.badge{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);color:var(--ink-3);font-family:var(--f-display);font-weight:700}
+.badge.won{background:var(--gold-soft);color:var(--gold)}
+.ach{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.a{padding:12px;border-radius:12px;border:1px dashed var(--line);display:grid;gap:4px;align-content:start}
+.a.won{border-style:solid;border-color:var(--gold);background:var(--gold-soft)}
+.a b{font-family:var(--f-display);font-size:.9rem}
+.a span{font-size:.76rem;color:var(--ink-2)}
+
+/* Log */
+.heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,12px);gap:3px;overflow-x:auto;padding-bottom:4px}
+.heat i{width:12px;height:12px;border-radius:3px;background:var(--surface-2)}
+.heat i.l1{background:color-mix(in srgb,var(--accent) 25%,var(--surface-2))}
+.heat i.l2{background:color-mix(in srgb,var(--accent) 50%,var(--surface-2))}
+.heat i.l3{background:color-mix(in srgb,var(--accent) 78%,var(--surface-2))}
+.heat i.l4{background:var(--gold)}
+.heat i.today{outline:1.5px solid var(--ink);outline-offset:1px}
+.day{padding:12px 0;border-top:1px solid var(--line)}
+.day:first-child{border-top:0}
+.day header{display:flex;justify-content:space-between;gap:10px;margin-bottom:4px}
+.wk{width:100%;border-collapse:collapse;font-size:.86rem;min-width:520px}
+.wk th{text-align:left;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
+.wk td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.wk td.n{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.wk tr.cur td{background:var(--accent-soft)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:10px;font-weight:600;opacity:0;transition:.25s;z-index:20;pointer-events:none;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.xpfly{color:var(--gold);font-family:var(--f-mono)}
+@media (max-width:860px){.today{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:620px){.player{grid-template-columns:1fr;justify-items:start}.stats{grid-template-columns:repeat(2,minmax(0,1fr));width:100%}.two{grid-template-columns:minmax(0,1fr)}.ring{width:88px;height:88px}.plans{grid-template-columns:minmax(0,1fr)}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+html{color-scheme:light}
+body{margin:0}
+.auth{min-height:100vh;display:grid;place-items:center;padding-block:32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:radial-gradient(700px 400px at 85% -10%,var(--accent-soft),transparent 70%),var(--bg)}
+.auth .card{width:100%;max-width:400px;padding:28px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:22px;font-family:var(--f-display);font-weight:700;font-size:1.05rem}
+.brand i{width:34px;height:34px;border-radius:9px;background:var(--ink);display:grid;place-items:center}
+.auth h1{font-size:1.5rem;margin-bottom:4px}
+.link{background:none;border:0;padding:0;color:var(--accent-ink);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+#aMsg{min-height:1.2em;font-size:.88rem;color:var(--ink-2);margin:0}
+.who{display:flex;gap:10px;align-items:center;font-size:.82rem}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+</head>
+<body>
+<section class="auth" id="auth" hidden>
+  <div class="card">
+    <div class="brand"><i><svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true"><path d="M7 23V9l9 9 9-9v14" stroke="#2cc3cf" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></i>Mastery Quest</div>
+    <h1 id="aTitle">Welcome back</h1>
+    <p class="muted" id="aSub" style="margin:0 0 18px">Log in to continue your quest.</p>
+    <form class="form" id="authForm">
+      <div class="field" id="aNameF" hidden><label for="aName">Your name</label><input class="input" id="aName" autocomplete="name" maxlength="40" placeholder="What should we call you?"></div>
+      <div class="field" id="aEmailF"><label for="aEmail">Email</label><input class="input" id="aEmail" type="email" autocomplete="email" required></div>
+      <div class="field" id="aPassF"><label for="aPass">Password</label><input class="input" id="aPass" type="password" autocomplete="current-password" minlength="8"></div>
+      <button class="btn primary" id="aSubmit" type="submit">Log in</button>
+      <p id="aMsg" role="status" aria-live="polite"></p>
+      <div class="muted" style="font-size:.88rem" id="aSwitch"></div>
+    </form>
+  </div>
+</section>
+
+<div class="wrap" hidden>
+  <div class="banner" id="banner"></div>
+
+  <section class="card player" aria-label="Player summary">
+    <div class="hello">
+      <h1 id="greet">Mastery Quest</h1>
+      <div class="who"><span class="muted" id="phaseLine"></span><span class="faint" id="who"></span><button class="btn" id="logout" type="button" style="padding:6px 12px">Log out</button></div>
+    </div>
+    <div class="ring" aria-hidden="true">
+      <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="var(--surface-2)" stroke-width="9"/><circle id="ringArc" cx="50" cy="50" r="44" fill="none" stroke="var(--accent)" stroke-width="9" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="276.5" style="transition:stroke-dashoffset .6s ease"/></svg>
+      <div class="lv"><div><span>Level</span><b id="lvNum">1</b></div></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="label">Total hours</div><div class="v num" id="stTotal">0</div><div class="s" id="stTotalS">of 16,750 planned</div></div>
+      <div class="stat"><div class="label">Today</div><div class="v num" id="stToday">0</div><div class="s" id="stTodayS"></div></div>
+      <div class="stat"><div class="label">Streak</div><div class="v num" id="stStreak">0</div><div class="s" id="stStreakS">days in a row</div></div>
+      <div class="stat"><div class="label">Pace</div><div class="v num" id="stPace">On track</div><div class="s" id="stPaceS"></div></div>
+    </div>
+    <div class="xpline">
+      <div class="row" style="justify-content:space-between;margin-bottom:6px"><span class="label">XP to next level</span><span class="num faint" id="xpText" style="font-size:.8rem"></span></div>
+      <div class="bar"><i id="xpBar" style="width:0"></i></div>
+    </div>
+  </section>
+
+  <nav class="tabs" aria-label="Sections">
+    <a href="#today" data-view="today">Today</a>
+    <a href="#plans" data-view="plans">Plans</a>
+    <a href="#journey" data-view="journey">Journey</a>
+    <a href="#log" data-view="log">Log</a>
+  </nav>
+
+  <main>
+    <section id="v-today" class="grid today">
+      <div class="grid">
+        <div class="card pad">
+          <div class="row" style="justify-content:space-between;margin-bottom:6px"><h2>This week</h2><span class="pill" id="weekRange"></span></div>
+          <div class="row" style="justify-content:space-between;margin:2px 0 4px;font-size:.88rem"><span class="muted" id="weekSum"></span><span class="num faint" id="weekLeft"></span></div>
+          <div class="bar" style="height:10px;margin-bottom:8px"><i id="weekBar" style="width:0"></i></div>
+          <div id="weekTracks"></div>
+        </div>
+        <div class="card pad">
+          <div class="row" style="justify-content:space-between;margin-bottom:6px"><h2>Today's quests</h2><span class="pill" id="slotMode"></span></div>
+          <p class="muted" id="questIntro" style="margin:0 0 6px;font-size:.9rem"></p>
+          <div id="quests"></div>
+        </div>
+        <div class="card pad">
+          <div class="row" style="justify-content:space-between;margin-bottom:8px"><h2 id="dayTitle">Logged today</h2><span class="num faint" id="dayTotal"></span></div>
+          <div id="todayList"></div>
+        </div>
+      </div>
+      <div class="card pad">
+        <h2 style="margin-bottom:12px" id="formTitle">Log a session</h2>
+        <form class="form" id="logForm" autocomplete="off">
+          <div class="two">
+            <div class="field"><label for="fDate">Date</label><input class="input" type="date" id="fDate" required></div>
+            <div class="field"><label for="fHours">Hours</label><input class="input num" type="number" id="fHours" min="0.25" max="18" step="0.25" placeholder="e.g. 2.5" required></div>
+          </div>
+          <div class="chips" id="hourChips"></div>
+          <div class="field"><label for="fPlan">Plan</label><select class="input" id="fPlan"></select></div>
+          <div class="field"><label for="fPhase">Phase</label><select class="input" id="fPhase"></select></div>
+          <div class="field"><label for="fNote">What you did</label><textarea class="input" id="fNote" placeholder="e.g. Finished Velleman ch. 3, solved 18 of 22 exercises; stuck on 3.4.7"></textarea></div>
+          <div class="row"><button class="btn primary" type="submit" id="fSubmit">Add session</button><button class="btn ghost" type="button" id="fCancel" hidden>Cancel edit</button><span class="faint" style="font-size:.82rem" id="fHint">1 hour = 10 XP</span></div>
+        </form>
+      </div>
+    </section>
+
+    <section id="v-plans" hidden>
+      <div class="filters" id="filters"></div>
+      <div class="grid plans" id="planGrid"></div>
+    </section>
+
+    <section id="v-journey" class="grid" hidden>
+      <div class="card pad grid" style="gap:12px">
+        <div class="row" style="justify-content:space-between"><h2>The 10-year map</h2><div class="legend" id="legend"></div></div>
+        <p class="muted" style="margin:0;font-size:.9rem">Jan 2027 to Dec 2036 at 30 hours a week (the semester sprint at about 100). Each row shows a year's four slots; the red line is today.</p>
+        <div class="gantt"><div class="gantt-inner" id="gantt"></div></div>
+      </div>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+        <div class="card pad"><h2 style="margin-bottom:8px">Milestones</h2><div id="milestones"></div></div>
+        <div class="card pad"><h2 style="margin-bottom:8px">Pace check</h2><div id="pace"></div></div>
+      </div>
+      <div class="card pad"><div class="row" style="justify-content:space-between;margin-bottom:12px"><h2>Achievements</h2><span class="pill" id="achCount"></span></div><div class="grid ach" id="ach"></div></div>
+    </section>
+
+    <section id="v-log" class="grid" hidden>
+      <div class="card pad">
+        <div class="row" style="justify-content:space-between;margin-bottom:10px"><h2>Last 26 weeks</h2><span class="faint" style="font-size:.8rem">Darker = closer to the day's target · gold = target hit</span></div>
+        <div class="heat" id="heat" role="img" aria-label="Daily hours heatmap"></div>
+      </div>
+      <div class="card pad">
+        <div class="row" style="justify-content:space-between;margin-bottom:10px"><h2>Weekly scorecard</h2><span class="faint" style="font-size:.8rem">Last 12 weeks, Monday to Sunday</span></div>
+        <div style="overflow-x:auto"><table class="wk" id="weeks"></table></div>
+      </div>
+      <div class="card pad">
+        <div class="row" style="justify-content:space-between;margin-bottom:6px"><h2>Every session</h2><select class="input" id="logFilter" style="width:auto"></select></div>
+        <div id="history"></div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+/* ---------------- Plan data (from your 21 Mastery Curriculum PDFs) ---------------- */
+const GROUPS = {
+  solve:{name:"Problem-solving", color:"var(--solve)"},
+  tech:{name:"Technical", color:"var(--tech)"},
+  think:{name:"Career & thinking", color:"var(--think)"},
+  habit:{name:"Daily habits", color:"var(--habit)"}
+};
+const P = (codes, names) => names.map((n,i)=>[codes[i], n]);
+const C8 = ["P0","P1","P2","P3","P4","P5","P6","P7"];
+const PLANS = [
+  {id:"aptitude",name:"Aptitude Speed",group:"think",hours:150,phases:P(["P1","P2","P3","P4","P5","P6","P7"],["Memory base","Calculation engine","Arithmetic core","Logic and verbal core","Algebra, geometry, counting and data","Timed mixed sets","Full mocks and company sets"])},
+  {id:"consulting",name:"Consulting",group:"think",hours:400,phases:P(C8,["Decide whether you want this","Business basics","Structured thinking and numbers","Case fundamentals","Case mastery (40 to 50 live cases)","Interview readiness","The first two years","Towards the top"])},
+  {id:"pm",name:"Product Management",group:"think",hours:550,phases:P(C8,["Decide whether you want this","Foundations","Users and design sense","Metrics, SQL and experiments","Strategy, business and AI products","Build and ship","Interview mastery (40 to 50 mocks)","On the job and towards the top"])},
+  {id:"companies",name:"Companies, Founders & Speaking",group:"think",hours:300,phases:P(["P1","P2","P3","P4","P5","P6","P7"],["Become someone who ships","Get real users","Go where the learning is densest","Build depth and reputation","Start your first real company","Scale, or start again","Frontier ambition"])},
+  {id:"money",name:"Money, Investing & Trading",group:"think",hours:250,phases:P(C8,["The balance sheet","Financial literacy","The passive core","Reading a business","Valuation","Portfolio construction","Trading: research (paper only)","Trading: live, small"])},
+  {id:"econ",name:"Economics & Startups",group:"think",hours:550,phases:P(C8,["Economic thinking","Principles: micro and macro","Money, banking and the real macro","Reading a business","Startups: idea to product-market fit","Building and financing companies","Capital allocation","Depth and specialisation"])},
+  {id:"maths",name:"Mathematics",group:"solve",hours:2300,phases:P(C8,["Proof and rigour foundations","Olympiad foundations","IMO mastery","Putnam and the undergraduate bridge","Undergraduate mathematics","Graduate mathematics","Original research","The frontier"])},
+  {id:"cs",name:"CS & Software Engineering",group:"tech",hours:1400,phases:P(C8,["The machine from first principles","Architecture and the memory hierarchy","Operating systems","Compilers and language implementation","Networking, concurrency and memory models","Theory","The engineering craft","Systems at scale, and originality"])},
+  {id:"aiml",name:"AI/ML & Kaggle",group:"tech",hours:1100,phases:P(C8,["Foundations: maths and the data stack","Core machine learning","Deep learning foundations","The Kaggle ascent","Specialist depth: CV, NLP/LLMs, RL","Research foundations","Original research and publishing","The frontier"])},
+  {id:"quant",name:"Quant Trading",group:"tech",hours:900,phases:P(C8,["Consolidation: maths and systems","Probability, statistics and the interview core","Market microstructure and the order book","Derivatives, options and volatility","Statistical arbitrage and alpha research","Execution, cost and portfolio construction","Low-latency engineering (C++)","The seat, then the book"])},
+  {id:"devops",name:"DevOps & MLOps",group:"think",hours:350,phases:P(C8,["Linux and the systems layer","Containers","Kubernetes and infrastructure as code","CI/CD, GitOps and progressive delivery","Observability and reliability","The ML pipeline","LLMOps and AI engineering","Platform, scale and judgement"])},
+  {id:"agi",name:"AGI",group:"tech",hours:450,phases:P(C8,["Foundations, confirmed by implementation","The transformer, built from scratch","Scaling, and the arguments about it","Post-training and reasoning","Interpretability","Evaluation","Agents, tools and long horizons","Original research"])},
+  {id:"security",name:"Security & Hacking",group:"tech",hours:600,phases:P(C8,["Foundations and the legal frame","The systems prerequisites","Web and application security","Networks, Active Directory and OSCP","Binary exploitation and reverse engineering","Cloud, containers and the supply chain","Applied cryptanalysis","Defence, research and originality"])},
+  {id:"philosophy",name:"Philosophy, Psychology & Rhetoric",group:"think",hours:600,phases:P(C8,["Orientation","Logic and argumentation","The Greeks","Psychology: methods before findings","Modern philosophy: Descartes to Nietzsche","The wisdom track as a practice","Rhetoric: from the page to the room","Synthesis beyond the Western canon"])},
+  {id:"geometric",name:"Geometric Thinking",group:"think",hours:200,phases:P(C8,["The framing texts","Complex analysis, seen","Geometry proper","Calculus and analysis, re-seen","Algebra and structure, seen","Topology, dynamics, higher dimensions","Discovery as a practice","Synthesis and transmission"])},
+  {id:"ipho",name:"IPhO Physics",group:"solve",hours:2400,phases:P(["P0","P1","P2","P3","P4","P5","P6"],["Ignition: maths and physical intuition","Rigorous introductory physics","Intermediate mastery and full calculus","Advanced topic mastery","Olympiad immersion","Peak and simulation","Beyond the olympiad"])},
+  {id:"chem",name:"Chemistry",group:"solve",hours:1200,phases:P(["P0","P1","P2","P3","P4","P5"],["Foundations with reasons","JEE Advanced core","National olympiad level","International olympiad level","University depth","Research taste and your edge"])},
+  {id:"bio",name:"Biology",group:"tech",hours:1040,phases:P(["P0","P1","P2","P3","P4","P5"],["Foundations with reasons","NEET mastery and the full Campbell","National olympiad level","International olympiad level","University depth","Research taste and your edge"])},
+  {id:"english",name:"English Fluency",group:"habit",hours:300,phases:P(C8,["Foundation repair","Grammar to automaticity","The vocabulary engine","Pronunciation and connected speech","Speaking fluency","Advanced range: idiom and register","Interactive fluency under pressure","Mastery and the credential (C2)"])},
+  {id:"hindi",name:"Hindi",group:"habit",hours:400,phases:P(C8,["Devanagari and the sound system","Core grammar","The tatsam engine: Sanskrit as a system","Output: writing and speaking","Modern literature","Medieval literature","Criticism, history and formal register","The credential"])},
+  {id:"chess",name:"Chess",group:"habit",hours:900,phases:P(["S1","S2","S3","S4","S5"],["Beginner to about 1200","About 1200 to 1600","About 1600 to 2000","About 2000 to 2300","2300 and beyond"])}
+];
+const PLAN = Object.fromEntries(PLANS.map(p=>[p.id,p]));
+const PSEUDO = {buffer:{name:"Buffer & catch-up",group:"think"}, review:{name:"Review",group:"think"}};
+const planName = id => (PLAN[id]||PSEUDO[id]||{name:id}).name;
+const planColor = id => GROUPS[(PLAN[id]||PSEUDO[id]||{group:"think"}).group].color;
+
+/* ---------------- Schedule (the agreed 10-year plan) ---------------- */
+const SEM_SLOTS = [
+  {key:"s1",label:"Slot 1 · Career",items:[["aptitude",150],["consulting",360]]},
+  {key:"s2",label:"Slot 2 · Maths",items:[["maths",500]]},
+  {key:"s3",label:"Slot 3 · CS",items:[["cs",500]]},
+  {key:"s4",label:"Slot 4 · Money & Economics",items:[["money",250],["econ",250]]},
+  {key:"s5",label:"Slot 5 · Mind & language",items:[["english",300],["chess",200]]}
+];
+const WORK_LABELS = ["Deep 1 · weekends","Deep 2 · weekdays","Reading","Habit"];
+const WORK_SHORT = ["D1","D2","R","H"];
+const SEM_SHORT = ["S1","S2","S3","S4","S5"];
+const YEARS = [
+  [[["maths",600]],[["cs",500]],[["pm",250]],[["chess",150]]],
+  [[["maths",600]],[["cs",400],["aiml",100]],[["pm",250]],[["chess",150]]],
+  [[["maths",600]],[["aiml",500]],[["pm",50],["consulting",40],["companies",160]],[["chess",150]]],
+  [[["ipho",600]],[["aiml",500]],[["companies",140],["econ",110]],[["chess",150]]],
+  [[["ipho",600]],[["quant",500]],[["econ",190],["devops",60]],[["chess",100],["hindi",50]]],
+  [[["ipho",600]],[["quant",400],["agi",100]],[["devops",250]],[["hindi",150]]],
+  [[["ipho",600]],[["agi",350],["security",150]],[["devops",40],["philosophy",210]],[["hindi",150]]],
+  [[["chem",600]],[["security",450],["bio",50]],[["philosophy",250]],[["hindi",50],["bio",100]]],
+  [[["chem",600]],[["bio",500]],[["philosophy",140],["geometric",110]],[["bio",150]]],
+  [[["buffer",300]],[["bio",190],["buffer",60]],[["geometric",90],["review",35]],[["bio",50],["review",25]]]
+];
+const DAY = 86400000;
+const d0 = (y,m,d)=>new Date(y,m,d).getTime();
+const START = d0(2027,0,1), SEM_END = d0(2027,6,1), END = d0(2037,0,1);
+const SEGS = []; // {plan,hours,start,end,row,lane,laneLabel,phaseKey}
+function buildSlot(items,start,end,row,lane,label){
+  const cap = items.reduce((s,x)=>s+x[1],0); let acc=0;
+  for(const [plan,h] of items){
+    const a = start+(end-start)*acc/cap; acc+=h; const b = start+(end-start)*acc/cap;
+    SEGS.push({plan,hours:h,start:a,end:b,row,lane,label});
+  }
+}
+SEM_SLOTS.forEach((s,i)=>buildSlot(s.items,START,SEM_END,0,i,s.label));
+YEARS.forEach((yr,i)=>{
+  const s = d0(2027+i,6,1), e = i===9 ? END : d0(2028+i,6,1);
+  yr.forEach((items,lane)=>buildSlot(items,s,e,i+1,lane,WORK_LABELS[lane]));
+});
+const ROWS = [{label:"Sprint",sub:"Jan–Jun 2027",start:START,end:SEM_END}].concat(YEARS.map((_,i)=>({label:i===9?"Final":"Year "+(i+1),sub:i===9?"Jul–Dec 2036":`Jul ${2027+i}–Jun ${2028+i}`,start:d0(2027+i,6,1),end:i===9?END:d0(2028+i,6,1)})));
+const PLANNED_TOTAL = SEGS.reduce((s,x)=>s+x.hours,0);
+const MILESTONES = [
+  {lv:1,date:d0(2027,5,30),title:"Placement-ready",need:["aptitude","english"],text:"Aptitude and English done, first career plan well under way"},
+  {lv:2,date:d0(2030,5,30),title:"Foundations",need:["cs","consulting","pm"],text:"Maths foundation, CS complete, both career plans done"},
+  {lv:3,date:d0(2032,5,30),title:"Technical depth",need:["aiml","econ","companies","money","maths"],text:"AI/ML complete, economics and business done"},
+  {lv:4,date:d0(2034,5,30),title:"Frontier",need:["ipho","quant","agi","devops","chess"],text:"Physics to olympiad level, Quant, AGI and DevOps complete"},
+  {lv:5,date:d0(2036,11,31),title:"All 21 plans",need:PLANS.map(p=>p.id),text:"Every plan's core path finished"}
+];
+
+/* ---------------- Helpers ---------------- */
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad2 = n=>String(n).padStart(2,"0");
+const ymd = t=>{const d=new Date(t);return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`};
+const parse = s=>{const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).getTime()};
+const todayStr = ()=>ymd(Date.now());
+const fmtH = h=>{const r=Math.round(h*100)/100;return (r%1===0?r.toLocaleString("en-IN"):r.toLocaleString("en-IN",{maximumFractionDigits:2}))};
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const fmtD = t=>{const d=new Date(t);return `${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}`};
+const fmtDay = s=>{const d=new Date(parse(s));return d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"})};
+function dailyTarget(t){
+  if(t<START||t>=END) return 0;
+  if(t<SEM_END) return 2500/((SEM_END-START)/DAY);
+  const wd=new Date(t).getDay(); return (wd===0||wd===6)?7.5:3;
+}
+const levelOf = h=>Math.floor(Math.sqrt(h/5))+1;
+const hoursFor = L=>5*(L-1)*(L-1);
+const rankOf = pct=>pct>=100?"Master":pct>=75?"Expert":pct>=50?"Adept":pct>=25?"Apprentice":pct>=10?"Novice":pct>0?"Recruit":"Not started";
+function toast(msg){const t=$("#toast");t.innerHTML=msg;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),2600)}
+
+/* ---------------- State and storage ---------------- */
+/* Supabase: each user's rows are protected by Row Level Security (auth.uid() = user_id). */
+const SB_URL = "https://azkegwqfdbxpqzwtokww.supabase.co";
+const SB_KEY = "sb_publishable_aWYJ2BIDcxTGDy3h4hz1Wg_DUCMiTr-"; // public by design
+const sb = window.supabase ? window.supabase.createClient(SB_URL, SB_KEY, {auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}) : null;
+let entries = [];         // [{id,date,plan,phase,hours,note,ts}]
+let progress = {done:{}}; // done["maths|P0"] = "2027-03-01"
+let session=null;
+function saveFail(err){ console.error(err); toast("Couldn't save that change. Check your connection and try again."); reload(); }
+function allEntries(){return entries}
+const toRow = e=>({id:e.id,date:e.date,plan:e.plan,phase:e.phase,hours:e.hours,note:e.note,ts:e.ts});
+async function addEntry(e){
+  entries=entries.concat([e]); render();
+  const {error}=await sb.from("entries").insert(toRow(e)); if(error) saveFail(error);
+}
+async function updateEntry(old, e){
+  entries=entries.map(x=>x.id===old.id?e:x); render();
+  const {error}=await sb.from("entries").update(toRow(e)).eq("id",old.id); if(error) saveFail(error);
+}
+async function deleteEntry(id){
+  entries=entries.filter(x=>x.id!==id); render();
+  const {error}=await sb.from("entries").delete().eq("id",id); if(error) saveFail(error);
+}
+async function savePhase(k){
+  const d=progress.done[k];
+  const q = d? sb.from("phase_done").upsert({key:k,done_on:d,user_id:session.user.id}) : sb.from("phase_done").delete().eq("key",k);
+  const {error}=await q; if(error) saveFail(error);
+}
+async function reload(){
+  if(!session) return;
+  const all=[]; let from=0;
+  while(true){
+    const {data,error}=await sb.from("entries").select("id,date,plan,phase,hours,note,ts").order("date").range(from,from+999);
+    if(error){banner("Couldn't load your log. Check your connection and reload the page.");return}
+    all.push(...data.map(r=>({...r,hours:+r.hours}))); if(data.length<1000) break; from+=1000;
+  }
+  const {data:ph,error:pe}=await sb.from("phase_done").select("key,done_on");
+  if(pe){banner("Couldn't load your phases. Reload the page.");return}
+  entries=all; progress={done:Object.fromEntries((ph||[]).map(r=>[r.key,r.done_on]))};
+  banner(""); fillPhase($("#fPhase").value); render();
+}
+
+/* ---------------- Derived numbers ---------------- */
+function derive(){
+  const entries = allEntries();
+  const byPlan={}, byDay={}; let total=0;
+  for(const e of entries){const h=+e.hours||0; total+=h; byPlan[e.plan]=(byPlan[e.plan]||0)+h; byDay[e.date]=(byDay[e.date]||0)+h}
+  const now=Date.now();
+  let expected=0; const expPlan={};
+  for(const s of SEGS){const f=Math.max(0,Math.min(1,(now-s.start)/(s.end-s.start)));expected+=s.hours*f;expPlan[s.plan]=(expPlan[s.plan]||0)+s.hours*f}
+  // streak: consecutive days with at least 1 hour, ending today (or yesterday if today is still empty)
+  let streak=0, t=parse(todayStr()); if(!(byDay[ymd(t)]>=1)) t-=DAY;
+  while(byDay[ymd(t)]>=1){streak++; t-=DAY}
+  let best=0, run=0; const days=Object.keys(byDay).sort();
+  for(let i=0;i<days.length;i++){ if(byDay[days[i]]>=1){ run = (i>0 && parse(days[i])-parse(days[i-1])<=DAY*1.5 && byDay[days[i-1]]>=1)?run+1:1; best=Math.max(best,run)} }
+  // last 28 days pace
+  let last28=0; for(let i=0;i<28;i++) last28+=byDay[ymd(parse(todayStr())-i*DAY)]||0;
+  return {entries,byPlan,byDay,total,expected,expPlan,streak,best,last28};
+}
+function planPct(id,D){const p=PLAN[id];return Math.min(100,100*(D.byPlan[id]||0)/p.hours)}
+function phasesDone(id){const p=PLAN[id];return p.phases.filter(([c])=>progress.done[id+"|"+c]).length}
+function planComplete(id,D){const p=PLAN[id];return phasesDone(id)===p.phases.length||((D.byPlan[id]||0)>=p.hours)}
+function currentSegs(t){return SEGS.filter(s=>t>=s.start&&t<s.end)}
+function defaultPhase(id){const p=PLAN[id];const f=p.phases.find(([c])=>!progress.done[id+"|"+c]);return (f||p.phases[p.phases.length-1])[0]}
+
+/* ---------------- Rendering ---------------- */
+let view="today", editing=null, filterGroup="all";
+function render(){
+  const D=derive();
+  renderPlayer(D);
+  if(view==="today") renderToday(D);
+  if(view==="plans") renderPlans(D);
+  if(view==="journey") renderJourney(D);
+  if(view==="log") renderLog(D);
+}
+function renderPlayer(D){
+  const L=levelOf(D.total), lo=hoursFor(L), hi=hoursFor(L+1), f=(D.total-lo)/(hi-lo);
+  $("#lvNum").textContent=L;
+  $("#ringArc").style.strokeDashoffset = String(276.5*(1-Math.min(1,D.total/PLANNED_TOTAL)));
+  $("#xpBar").style.width=(100*f).toFixed(1)+"%";
+  $("#xpText").textContent=`${Math.round(D.total*10).toLocaleString("en-IN")} XP · ${Math.ceil((hi-D.total)*10).toLocaleString("en-IN")} to level ${L+1}`;
+  $("#stTotal").innerHTML=fmtH(D.total)+"<small> h</small>";
+  $("#stTotalS").textContent=`${(100*D.total/PLANNED_TOTAL).toFixed(1)}% of ${PLANNED_TOTAL.toLocaleString("en-IN")} h`;
+  const td=D.byDay[todayStr()]||0, tgt=dailyTarget(Date.now());
+  $("#stToday").innerHTML=fmtH(td)+"<small> h</small>";
+  $("#stTodayS").textContent= tgt? `target ${fmtH(Math.round(tgt*4)/4)} h` : (Date.now()<START?"Free month: optional":"Plan finished");
+  $("#stStreak").innerHTML=D.streak+"<small> d</small>";
+  $("#stStreakS").textContent=`best ${D.best} days`;
+  const now=Date.now();
+  if(now<START){ const dd=Math.ceil((START-now)/DAY); $("#stPace").textContent=dd+" d"; $("#stPaceS").textContent="until the sprint starts"; }
+  else { const diff=D.total-D.expected; $("#stPace").textContent=(diff>=0?"+":"−")+fmtH(Math.abs(Math.round(diff)))+" h"; $("#stPace").style.color=diff>=-1?"var(--good)":"var(--bad)"; $("#stPaceS").textContent=diff>=0?"ahead of plan":"behind plan"; }
+  const hr=new Date().getHours(); $("#greet").textContent=(hr<12?"Good morning":hr<17?"Good afternoon":"Good evening")+(displayName()?", "+displayName():"");
+  const row=ROWS.find(r=>now>=r.start&&now<r.end);
+  $("#phaseLine").textContent = now<START?"December is free for placements · the sprint starts 1 Jan 2027": row? `${row.label} · ${row.sub}` : "Quest complete";
+}
+function slotBadge(i,isSem){return `<div class="slot" style="background:${isSem?"var(--slate,var(--solve))":"var(--solve)"}">${isSem?SEM_SHORT[i]:WORK_SHORT[i]}</div>`}
+function weekStart(t){const d=new Date(t);d.setHours(0,0,0,0);const k=(d.getDay()+6)%7;return d.getTime()-k*DAY}
+function plannedBetween(a,b,plan){let s=0;for(const g of SEGS){if(plan&&g.plan!==plan)continue;const lo=Math.max(a,g.start),hi=Math.min(b,g.end);if(hi>lo)s+=g.hours*(hi-lo)/(g.end-g.start)}return s}
+function expectedBy(t,plan){return plannedBetween(-Infinity,t,plan)}
+function doneBetween(D,a,b,plan){let s=0;for(const e of D.entries){const t=parse(e.date);if(t>=a&&t<b&&(!plan||e.plan===plan))s+=+e.hours}return s}
+function renderWeek(D){
+  const now=Date.now(), isPre=now<START, ws=weekStart(isPre?START+4*DAY:now), we=ws+7*DAY;
+  $("#weekRange").textContent=`${fmtD(ws).replace(/ \d{4}$/,"")} – ${fmtD(we-DAY)}`;
+  const segs=currentSegs(Math.max(ws+3*DAY,START)).filter(s=>s.end>ws&&s.start<we).sort((a,b)=>a.lane-b.lane);
+  const isSem=ws<SEM_END;
+  let tTot=0,dTot=0;
+  const rows=segs.map(s=>{
+    const target=isSem? plannedBetween(ws,we,s.plan) : [12,10,5,3][s.lane];
+    const done=doneBetween(D,ws,we,s.plan); tTot+=target; dTot+=done;
+    const p=PLAN[s.plan]; let goal="";
+    if(p){ const per=p.hours/p.phases.length, exp=Math.min(p.hours,expectedBy(we,s.plan)), idx=Math.min(p.phases.length-1,Math.floor(exp/per));
+      const into=Math.round(100*(exp-idx*per)/per); const [c,n]=p.phases[idx];
+      goal=`By Sunday: ${fmtH(Math.round(exp))} of ${fmtH(p.hours)} h total · ${c} ${esc(n)}, about ${into}% through`; }
+    const pct=target?Math.min(100,100*done/target):0, hit=done>=target-0.01&&target>0;
+    return `<div class="quest">${slotBadge(s.lane,isSem)}<div style="min-width:0"><div class="t">${esc(planName(s.plan))} ${hit?`<span class="pill" style="background:var(--gold-soft);color:var(--gold)">Week cleared</span>`:""}</div>
+      <div class="m">${goal||esc(s.label)}</div><div class="bar" style="margin-top:6px;height:6px"><i style="width:${pct}%;background:${hit?"var(--gold)":planColor(s.plan)}"></i></div></div>
+      <div style="text-align:right" class="num"><b>${fmtH(Math.round(done*10)/10)}</b><span class="faint">/${fmtH(Math.round(target*10)/10)} h</span><div class="faint" style="font-size:.75rem;font-family:var(--f-body)">${target>done?fmtH(Math.round((target-done)*10)/10)+" h left":"done"}</div></div></div>`;
+  });
+  $("#weekTracks").innerHTML=rows.join("")||`<div class="empty"><b>No tracks this week</b>The plan is complete.</div>`;
+  const daysLeft=Math.max(1,Math.ceil((we-Math.max(now,ws))/DAY));
+  $("#weekSum").textContent= isPre?`Preview of your first sprint week (${fmtH(Math.round(tTot))} h target)`:`${fmtH(Math.round(dTot*10)/10)} of ${fmtH(Math.round(tTot))} h this week`;
+  $("#weekLeft").textContent= isPre?"": tTot>dTot? `${fmtH(Math.round((tTot-dTot)*10)/10)} h left · ~${fmtH(Math.round((tTot-dTot)/daysLeft*10)/10)} h a day` : "Week target hit";
+  $("#weekBar").style.width=(tTot?Math.min(100,100*dTot/tTot):0)+"%";
+  $("#weekBar").style.background=dTot>=tTot&&tTot>0?"var(--gold)":"var(--accent)";
+}
+function renderWeeks(D){
+  const now=Date.now(), cur=weekStart(now); let html=`<tr><th>Week</th><th>Planned</th><th>Done</th><th style="width:40%">Progress</th><th>Result</th></tr>`;
+  for(let i=0;i<12;i++){
+    const ws=cur-i*7*DAY, we=ws+7*DAY, plan=plannedBetween(ws,we), done=doneBetween(D,ws,we);
+    const pct=plan?Math.min(100,100*done/plan):0;
+    const res= plan<0.5? (done>0?"Bonus":"Free week") : done>=plan-0.01? "Cleared" : i===0? "In progress" : `${Math.round(100*done/plan)}%`;
+    html+=`<tr class="${i===0?"cur":""}"><td>${fmtD(ws).replace(/ \d{4}$/,"")} – ${fmtD(we-DAY).replace(/ \d{4}$/,"")}</td><td class="n">${fmtH(Math.round(plan))} h</td><td class="n">${fmtH(Math.round(done*10)/10)} h</td><td><div class="bar"><i style="width:${pct}%;background:${done>=plan&&plan>0?"var(--gold)":"var(--accent)"}"></i></div></td><td>${res}</td></tr>`;
+  }
+  $("#weeks").innerHTML=html;
+}
+function renderToday(D){
+  renderWeek(D);
+  const now=Date.now(), isPre=now<START, ref=isPre?START:now;
+  let segs=currentSegs(ref); const isSem=ref<SEM_END;
+  $("#slotMode").textContent = isPre?"Preview: sprint from 1 Jan": isSem?"Sprint · ~100 h a week":"30 h a week";
+  $("#questIntro").textContent = isPre? "These are your slots from 1 January. Until then you're free, but anything you log now still counts." : isSem? "Five slots, about 14 hours a day in total. Rotate between them so no single subject burns you out." : "Weekdays 3 h (Deep 2, Reading, Habit), weekends 7.5 h with the long Deep 1 block.";
+  const today=todayStr(); const todayBy={}; for(const e of D.entries) if(e.date===today) todayBy[e.plan]=(todayBy[e.plan]||0)+(+e.hours);
+  const wd=new Date(now).getDay(), weekend=wd===0||wd===6;
+  $("#quests").innerHTML = segs.length? segs.sort((a,b)=>a.lane-b.lane).map(s=>{
+    const real=PLAN[s.plan]; const span=(s.end-s.start)/DAY; let per = s.hours/span*7;
+    if(!isSem){ per=[12,10,5,3][s.lane]; }
+    let dayT = isSem? s.hours/span : (s.lane===0?(weekend?6:0):s.lane===1?(weekend?1.25:1.5):s.lane===2?(weekend?0:1):(0.5));
+    if(isPre) dayT=s.hours/span;
+    const got=todayBy[s.plan]||0; const pct=dayT?Math.min(100,100*got/dayT):0;
+    const done = real? (D.byPlan[s.plan]||0) : 0;
+    const phase = real? defaultPhase(s.plan):"";
+    return `<div class="quest">${slotBadge(s.lane,isSem)}<div style="min-width:0"><div class="t">${esc(planName(s.plan))}${real?` <span class="faint" style="font-weight:500;font-size:.85rem">· ${phase}</span>`:""}</div>
+      <div class="m">${esc(s.label)} · until ${fmtD(s.end)} · ${fmtH(Math.round(per*10)/10)} h a week${real?` · ${fmtH(done)} of ${fmtH(real.hours)} h done`:""}</div>
+      <div class="bar" style="margin-top:6px;height:6px"><i style="width:${pct}%;background:${planColor(s.plan)}"></i></div></div>
+      <div style="text-align:right"><div class="num" style="font-weight:600">${fmtH(got)}<span class="faint">/${dayT?fmtH(Math.round(dayT*4)/4):"–"}</span></div>${real?`<button class="btn ghost" data-quick="${s.plan}" style="font-size:.8rem">Log</button>`:""}</div></div>`;
+  }).join("") : `<div class="empty"><b>Quest complete</b>All ten years are done.</div>`;
+  // today's list for the date selected in the form
+  const sel=$("#fDate").value||today;
+  const list=D.entries.filter(e=>e.date===sel).sort((a,b)=>(a.ts||0)-(b.ts||0));
+  $("#dayTitle").textContent = sel===today?"Logged today":"Logged on "+fmtDay(sel);
+  $("#dayTotal").textContent = list.length? fmtH(list.reduce((s,e)=>s+(+e.hours),0))+" h":"";
+  $("#todayList").innerHTML = list.length? list.map(entryHTML).join("") : `<div class="empty"><b>Nothing logged ${sel===today?"today":"for this day"} yet</b>Pick a plan, enter the hours and write what you covered. Each hour earns 10 XP.</div>`;
+}
+function entryHTML(e){
+  return `<div class="entry"><span class="h" style="color:${planColor(e.plan)}">${fmtH(e.hours)} h</span>
+    <div style="min-width:0"><div style="font-weight:600">${esc(planName(e.plan))} <span class="faint" style="font-weight:500">· ${esc(e.phase||"")}</span></div>${e.note?`<div class="n">${esc(e.note)}</div>`:""}</div>
+    <div class="row" style="gap:2px;flex-wrap:nowrap"><button class="btn ghost" data-edit="${e.id}" aria-label="Edit session">Edit</button><button class="btn ghost danger" data-del="${e.id}" aria-label="Delete session">Delete</button></div></div>`;
+}
+function renderPlans(D){
+  const groups=[["all","All 21"]].concat(Object.entries(GROUPS).map(([k,g])=>[k,g.name]));
+  $("#filters").innerHTML=groups.map(([k,n])=>`<button class="chip ${filterGroup===k?"on":""}" data-filter="${k}" style="font-family:var(--f-body)">${k!=="all"?`<span class="dot" style="display:inline-block;background:${GROUPS[k].color};margin-right:6px;vertical-align:middle"></span>`:""}${n}</button>`).join("");
+  const now=Date.now();
+  $("#planGrid").innerHTML=PLANS.filter(p=>filterGroup==="all"||p.group===filterGroup).map(p=>{
+    const h=D.byPlan[p.id]||0, pct=planPct(p.id,D), pd=phasesDone(p.id), exp=D.expPlan[p.id]||0;
+    const segs=SEGS.filter(s=>s.plan===p.id); const first=Math.min(...segs.map(s=>s.start)), last=Math.max(...segs.map(s=>s.end));
+    const active=segs.some(s=>now>=s.start&&now<s.end);
+    const status = active? `<span class="pill" style="background:var(--accent-soft);color:var(--accent-ink)">Playing now</span>` : now<first? `<span class="pill">Starts ${MON[new Date(first).getMonth()]} ${new Date(first).getFullYear()}</span>` : planComplete(p.id,D)? `<span class="pill" style="background:var(--gold-soft);color:var(--gold)">Complete</span>` : `<span class="pill">Window ended ${MON[new Date(last).getMonth()]} ${new Date(last).getFullYear()}</span>`;
+    return `<article class="card plan"><header><div style="min-width:0"><div class="row" style="gap:8px"><span class="dot" style="background:${GROUPS[p.group].color}"></span><h3>${esc(p.name)}</h3></div>
+      <div class="faint rank" style="margin-top:3px">${rankOf(pct)} · ${pd}/${p.phases.length} bosses beaten</div></div>${status}</header>
+      <div><div class="row" style="justify-content:space-between;font-size:.82rem;margin-bottom:5px"><span class="num">${fmtH(h)} / ${fmtH(p.hours)} h</span><span class="faint">${exp>0.5?`plan says ${fmtH(Math.round(exp))} h by now`:`${fmtD(first)} – ${fmtD(last)}`}</span></div>
+      <div class="bar"><i style="width:${pct}%;background:${GROUPS[p.group].color}"></i></div></div>
+      <div class="phases">${p.phases.map(([c,n])=>{const k=p.id+"|"+c, d=progress.done[k];return `<label class="phase ${d?"done":""}"><input type="checkbox" data-phase="${k}" ${d?"checked":""}><span class="c">${c}</span><span class="pn">${esc(n)}</span>${d?`<span class="d">${fmtD(parse(d))}</span>`:`<span class="faint num" style="font-size:.72rem">~${fmtH(Math.round(p.hours/p.phases.length))} h</span>`}</label>`}).join("")}</div>
+    </article>`;
+  }).join("");
+}
+function renderJourney(D){
+  $("#legend").innerHTML=Object.values(GROUPS).map(g=>`<span><span class="dot" style="background:${g.color}"></span>${g.name}</span>`).join("");
+  const now=Date.now();
+  $("#gantt").innerHTML=ROWS.map((r,ri)=>{
+    const lanes = ri===0?5:4; let html="";
+    for(let l=0;l<lanes;l++){
+      html+=`<div class="lane" title="${esc(ri===0?SEM_SLOTS[l].label:WORK_LABELS[l])}">`+SEGS.filter(s=>s.row===ri&&s.lane===l).map(s=>{
+        const left=100*(s.start-r.start)/(r.end-r.start), w=100*(s.end-s.start)/(r.end-r.start);
+        return `<div class="seg ${s.end<now?"past":""}" style="left:${left}%;width:${w}%;background:${planColor(s.plan)}" title="${esc(planName(s.plan))}: ${s.hours} h, ${fmtD(s.start)} – ${fmtD(s.end)}">${esc(planName(s.plan))} · ${s.hours}</div>`}).join("")+`</div>`;
+    }
+    const nl = now>=r.start&&now<r.end? `<div class="nowline" style="left:${100*(now-r.start)/(r.end-r.start)}%"></div>`:"";
+    return `<div class="yrow"><div class="ylab">${r.label}<span>${r.sub}</span></div><div class="lanes">${html}${nl}</div></div>`;
+  }).join("");
+  $("#milestones").innerHTML=MILESTONES.map(m=>{
+    const met=m.need.filter(id=>planComplete(id,D)).length, won=met===m.need.length;
+    return `<div class="ms"><div class="badge ${won?"won":""}">${m.lv}</div><div style="min-width:0"><div style="font-weight:600">Level ${m.lv}: ${m.title}</div><div class="muted" style="font-size:.84rem">${m.text}</div></div><div style="text-align:right;font-size:.8rem"><div class="num">${MON[new Date(m.date).getMonth()]} ${new Date(m.date).getFullYear()}</div><div class="faint">${met}/${m.need.length} plans</div></div></div>`;
+  }).join("");
+  const remaining=Math.max(0,PLANNED_TOTAL-D.total), weekly=D.last28/4;
+  let proj="Log a few weeks of sessions to see a projected finish date.";
+  if(weekly>0.5){const t=Date.now()+remaining/weekly*7*DAY; proj=`At your last 4 weeks' pace (${fmtH(Math.round(weekly*10)/10)} h a week) you'd finish around <b>${MON[new Date(t).getMonth()]} ${new Date(t).getFullYear()}</b>.`}
+  const diff=D.total-D.expected;
+  $("#pace").innerHTML=`<div class="grid" style="gap:12px">
+    <div class="row" style="justify-content:space-between"><span class="muted">Plan says by today</span><b class="num">${fmtH(Math.round(D.expected))} h</b></div>
+    <div class="row" style="justify-content:space-between"><span class="muted">You've done</span><b class="num">${fmtH(D.total)} h</b></div>
+    <div class="row" style="justify-content:space-between"><span class="muted">Difference</span><b class="num" style="color:${diff>=-1?"var(--good)":"var(--bad)"}">${diff>=0?"+":"−"}${fmtH(Math.abs(Math.round(diff)))} h</b></div>
+    <div class="row" style="justify-content:space-between"><span class="muted">Last 28 days</span><b class="num">${fmtH(D.last28)} h</b></div>
+    <div class="row" style="justify-content:space-between"><span class="muted">Hours left</span><b class="num">${fmtH(Math.round(remaining))} h</b></div>
+    <p class="muted" style="margin:0;font-size:.88rem">${proj}</p>
+    <p class="faint" style="margin:0;font-size:.8rem">Rule: if you're more than 10% behind for a quarter, cut depth from the current science plan, never from Maths, CS or your career plan.</p></div>`;
+  const nPhases=Object.keys(progress.done).length, nComplete=PLANS.filter(p=>planComplete(p.id,D)).length;
+  const A=[
+    ["First step","Log your first session",D.total>0],["Century","100 hours logged",D.total>=100],["Grinder","1,000 hours logged",D.total>=1000],
+    ["Deep work","5,000 hours logged",D.total>=5000],["Ten thousand","10,000 hours logged",D.total>=10000],
+    ["On fire","7-day streak",D.best>=7],["Unbroken","30-day streak",D.best>=30],["Iron will","100-day streak",D.best>=100],
+    ["Marathon day","10+ hours in one day",Object.values(D.byDay).some(h=>h>=10)],
+    ["First boss","Finish your first phase",nPhases>=1],["Boss hunter","Finish 25 phases",nPhases>=25],
+    ["Plan cleared","Complete a whole plan",nComplete>=1],["Polymath","Complete 10 plans",nComplete>=10],["Mastery","Complete all 21",nComplete>=21],
+    ["Placement-ready","Aptitude plan complete",planComplete("aptitude",D)],["Ahead of schedule","Be ahead of the plan after Jan 2027",Date.now()>START+7*DAY&&D.total>D.expected]
+  ];
+  $("#achCount").textContent=`${A.filter(a=>a[2]).length} of ${A.length}`;
+  $("#ach").innerHTML=A.map(([t,s,w])=>`<div class="a ${w?"won":""}"><b>${t}</b><span>${s}</span></div>`).join("");
+}
+function renderLog(D){
+  const end=parse(todayStr()); const startDay=end-(7*25+new Date(end).getDay())*DAY; let cells="";
+  for(let t=startDay;t<=end;t+=DAY){
+    const s=ymd(t), h=D.byDay[s]||0, tg=dailyTarget(t)||3, r=h/tg;
+    const c = h<=0?"":r>=1?"l4":r>=.66?"l3":r>=.33?"l2":"l1";
+    cells+=`<i class="${c} ${s===todayStr()?"today":""}" title="${fmtDay(s)}: ${fmtH(h)} h"></i>`;
+  }
+  $("#heat").innerHTML=cells;
+  renderWeeks(D);
+  const sel=$("#logFilter"); const cur=sel.value||"all";
+  sel.innerHTML=`<option value="all">All plans</option>`+PLANS.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join(""); sel.value=cur;
+  const list=D.entries.filter(e=>cur==="all"||e.plan===cur).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:(b.ts||0)-(a.ts||0));
+  if(!list.length){$("#history").innerHTML=`<div class="empty"><b>No sessions yet</b>Your log builds up here, newest first, as you add sessions on the Today tab.</div>`;return}
+  const byDate={}; for(const e of list.slice(0,600)) (byDate[e.date]=byDate[e.date]||[]).push(e);
+  $("#history").innerHTML=Object.entries(byDate).map(([d,es])=>`<div class="day"><header><b>${fmtDay(d)}</b><span class="num faint">${fmtH(es.reduce((s,e)=>s+(+e.hours),0))} h</span></header>${es.map(entryHTML).join("")}</div>`).join("")+(list.length>600?`<p class="faint">Showing the latest 600 sessions.</p>`:"");
+}
+
+/* ---------------- Form ---------------- */
+function fillPlanSelect(sel){
+  const now=Date.now(), ref=now<START?START:now; const cur=currentSegs(ref).map(s=>s.plan).filter(id=>PLAN[id]);
+  const opt=p=>`<option value="${p.id}">${esc(p.name)}</option>`;
+  $("#fPlan").innerHTML=(cur.length?`<optgroup label="Playing now">${cur.map(id=>opt(PLAN[id])).join("")}</optgroup>`:"")+
+    Object.entries(GROUPS).map(([k,g])=>`<optgroup label="${g.name}">${PLANS.filter(p=>p.group===k&&!cur.includes(p.id)).map(opt).join("")}</optgroup>`).join("");
+  $("#fPlan").value = sel || cur[0] || "aptitude";
+  fillPhase();
+}
+function fillPhase(sel){
+  const p=PLAN[$("#fPlan").value]; if(!p) return;
+  $("#fPhase").innerHTML=p.phases.map(([c,n])=>`<option value="${c}">${c} · ${esc(n)}${progress.done[p.id+"|"+c]?" (done)":""}</option>`).join("");
+  $("#fPhase").value = sel || defaultPhase(p.id);
+}
+$("#hourChips").innerHTML=[0.5,1,1.5,2,3,4,6].map(h=>`<button type="button" class="chip" data-h="${h}">${h} h</button>`).join("");
+$("#hourChips").addEventListener("click",e=>{const b=e.target.closest("[data-h]");if(b){$("#fHours").value=b.dataset.h}});
+$("#fPlan").addEventListener("change",()=>fillPhase());
+$("#fDate").addEventListener("change",()=>render());
+function resetForm(){editing=null;$("#fHours").value="";$("#fNote").value="";$("#fSubmit").textContent="Add session";$("#fCancel").hidden=true;$("#formTitle").textContent="Log a session"}
+$("#fCancel").addEventListener("click",()=>{resetForm();fillPlanSelect()});
+$("#logForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const hours=Math.round(parseFloat($("#fHours").value)*100)/100, date=$("#fDate").value;
+  if(!(hours>0)||hours>18){toast("Enter between 0.25 and 18 hours.");return}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){toast("Pick a date.");return}
+  const entry={id:editing?editing.id:("e"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)),date,plan:$("#fPlan").value,phase:$("#fPhase").value,hours,note:$("#fNote").value.trim().slice(0,2000),ts:editing?editing.ts:Date.now()};
+  const before=levelOf(derive().total);
+  if(editing){updateEntry(editing,entry);toast("Session updated")}
+  else{addEntry(entry); const after=levelOf(derive().total); toast(after>before?`Level up! You reached level ${after}`:`+${Math.round(hours*10)} XP · ${esc(planName(entry.plan))}`)}
+  const keepPlan=entry.plan; resetForm(); fillPlanSelect(keepPlan); $("#fDate").value=date; render();
+});
+document.addEventListener("click",e=>{
+  const ed=e.target.closest("[data-edit]"), dl=e.target.closest("[data-del]"), q=e.target.closest("[data-quick]"), f=e.target.closest("[data-filter]");
+  if(ed){const en=allEntries().find(x=>x.id===ed.dataset.edit); if(!en) return; editing=en; go("today");
+    $("#fDate").value=en.date; fillPlanSelect(en.plan); fillPhase(en.phase); $("#fHours").value=en.hours; $("#fNote").value=en.note||"";
+    $("#fSubmit").textContent="Save changes"; $("#fCancel").hidden=false; $("#formTitle").textContent="Edit session"; render(); $("#fHours").focus()}
+  if(dl){ if(dl.dataset.armed){deleteEntry(dl.dataset.del);toast("Session deleted")} else {dl.dataset.armed="1";dl.textContent="Confirm";setTimeout(()=>{if(dl.isConnected){delete dl.dataset.armed;dl.textContent="Delete"}},3000)} }
+  if(q){$("#fPlan").value=q.dataset.quick;fillPhase();$("#fHours").focus();$("#logForm").scrollIntoView({behavior:"smooth",block:"center"})}
+  if(f){filterGroup=f.dataset.filter;render()}
+});
+document.addEventListener("change",e=>{
+  const c=e.target.closest("[data-phase]"); if(!c) return;
+  const k=c.dataset.phase;
+  if(c.checked){progress.done[k]=todayStr(); toast(`Boss defeated: ${esc(k.split("|")[1])} of ${esc(planName(k.split("|")[0]))}`)} else delete progress.done[k];
+  progress={done:{...progress.done}}; savePhase(k); render();
+});
+
+/* ---------------- Routing ---------------- */
+const VIEWS=["today","plans","journey","log"];
+function go(v){ if(location.hash!=="#"+v) location.hash=v; else show(v) }
+function show(v){
+  view=VIEWS.includes(v)?v:"today";
+  VIEWS.forEach(x=>{$("#v-"+x).hidden = x!==view});
+  document.querySelectorAll(".tabs a").forEach(a=>{ if(a.dataset.view===view) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current")});
+  render();
+}
+window.addEventListener("hashchange",()=>show(location.hash.slice(1)));
+
+/* ---------------- Boot ---------------- */
+$("#fDate").value=todayStr();
+fillPlanSelect();
+show(location.hash.slice(1));
+function banner(msg){const b=$("#banner"); if(msg){b.innerHTML=msg;b.classList.add("show")} else b.classList.remove("show")}
+/* ---------------- Auth ---------------- */
+function displayName(){const n=session&&session.user&&(session.user.user_metadata||{}).name; return n?String(n).slice(0,40):""}
+let authMode="login";
+function setAuthMode(m){
+  authMode=m;
+  $("#aTitle").textContent = m==="signup"?"Create your account":m==="reset"?"Reset your password":m==="newpass"?"Choose a new password":"Welcome back";
+  $("#aSub").textContent = m==="signup"?"Track every hour of your 10-year mastery plan.":m==="reset"?"We'll email you a link to set a new password.":m==="newpass"?"Enter a new password for your account.":"Log in to continue your quest.";
+  $("#aNameF").hidden = m!=="signup"; $("#aEmailF").hidden = m==="newpass"; $("#aPassF").hidden = m==="reset";
+  $("#aSubmit").textContent = m==="signup"?"Create account":m==="reset"?"Send reset link":m==="newpass"?"Save password":"Log in";
+  $("#aSwitch").innerHTML = m==="signup"?`Already have an account? <button type="button" class="link" data-am="login">Log in</button>`:m==="login"?`New here? <button type="button" class="link" data-am="signup">Create an account</button> · <button type="button" class="link" data-am="reset">Forgot password?</button>`:`<button type="button" class="link" data-am="login">Back to log in</button>`;
+  $("#aPass").autocomplete = m==="login"?"current-password":"new-password";
+  $("#aMsg").textContent="";
+}
+function showAuth(on){ $("#auth").hidden=!on; document.querySelector(".wrap").hidden=on; }
+$("#auth").addEventListener("click",e=>{const b=e.target.closest("[data-am]"); if(b) setAuthMode(b.dataset.am)});
+$("#authForm").addEventListener("submit",async e=>{
+  e.preventDefault(); if(!sb) return;
+  const email=$("#aEmail").value.trim(), pass=$("#aPass").value, name=$("#aName").value.trim();
+  const msg=t=>{$("#aMsg").textContent=t}; const btn=$("#aSubmit"); btn.disabled=true;
+  try{
+    if((authMode==="signup"||authMode==="newpass") && pass.length<8){msg("Use at least 8 characters for your password.");return}
+    if(authMode==="login"){ const {error}=await sb.auth.signInWithPassword({email,password:pass}); if(error) msg(error.message==="Invalid login credentials"?"That email and password don't match. Try again or reset your password.":error.message.includes("not confirmed")?"Confirm your email first: open the link we sent you.":error.message) }
+    else if(authMode==="signup"){ const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{name},emailRedirectTo:location.origin+location.pathname}}); if(error) msg(error.message); else if(!data.session) msg("Account created. Check your email and open the confirmation link, then log in.") }
+    else if(authMode==="reset"){ const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname}); msg(error?error.message:"If that email has an account, a reset link is on its way.") }
+    else if(authMode==="newpass"){ const {error}=await sb.auth.updateUser({password:pass}); if(error) msg(error.message); else {toast("Password updated"); history.replaceState(null,"",location.pathname); showAuth(false)} }
+  } finally { btn.disabled=false; }
+});
+$("#logout").addEventListener("click",async()=>{await sb.auth.signOut()});
+if(!sb){ showAuth(true); setAuthMode("login"); $("#aMsg").textContent="Couldn't load the sign-in service. Check your connection and reload the page."; }
+else{
+  setAuthMode("login");
+  sb.auth.onAuthStateChange((event,s)=>{
+    if(event==="PASSWORD_RECOVERY"){ session=s; showAuth(true); setAuthMode("newpass"); return }
+    const was=session&&session.user&&session.user.id; session=s;
+    if(!s){ entries=[]; progress={done:{}}; showAuth(true); if(authMode==="newpass") setAuthMode("login"); return }
+    if(authMode!=="newpass") showAuth(false);
+    $("#who").textContent=s.user.email||"";
+    if(was!==s.user.id) setTimeout(()=>{ reload(); render(); },0);
+  });
+}
+})();
+</script>
+
+</body>
+</html>
