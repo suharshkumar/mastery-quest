@@ -231,7 +231,7 @@ textarea.code{font-family:var(--f-mono);font-size:.82rem;min-height:90px}
       <div class="lv"><div><span>Level</span><b id="lvNum">1</b></div></div>
     </div>
     <div class="stats">
-      <div class="stat"><div class="label">Total hours</div><div class="v num" id="stTotal">0</div><div class="s" id="stTotalS">of 16,750 planned</div></div>
+      <div class="stat"><div class="label">Total hours</div><div class="v num" id="stTotal">0</div><div class="s" id="stTotalS">of 17,760 planned</div></div>
       <div class="stat"><div class="label">Today</div><div class="v num" id="stToday">0</div><div class="s" id="stTodayS"></div></div>
       <div class="stat"><div class="label">Streak</div><div class="v num" id="stStreak">0</div><div class="s" id="stStreakS">days in a row</div></div>
       <div class="stat"><div class="label">Pace</div><div class="v num" id="stPace">On track</div><div class="s" id="stPaceS"></div></div>
@@ -293,7 +293,7 @@ textarea.code{font-family:var(--f-mono);font-size:.82rem;min-height:90px}
     <section id="v-journey" class="grid" hidden>
       <div class="card pad grid" style="gap:12px">
         <div class="row" style="justify-content:space-between"><h2>The 10-year map</h2><div class="legend" id="legend"></div></div>
-        <p class="muted" style="margin:0;font-size:.9rem">Jan 2027 to Dec 2036 at 30 hours a week (the semester sprint at about 100). Each row shows a year's four slots; the red line is today.</p>
+        <p class="muted" style="margin:0;font-size:.9rem">Jan 2027 to Aug 2037 at 30 hours a week (the semester sprint at about 100). Each row shows a year's four slots; the red line is today.</p>
         <div class="gantt"><div class="gantt-inner" id="gantt"></div></div>
       </div>
       <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
@@ -416,7 +416,8 @@ const PLANS = [
   {id:"bio",name:"Biology",group:"tech",hours:1040,phases:P(["P0","P1","P2","P3","P4","P5"],["Foundations with reasons","NEET mastery and the full Campbell","National olympiad level","International olympiad level","University depth","Research taste and your edge"])},
   {id:"english",name:"English Fluency",group:"habit",hours:300,phases:P(C8,["Foundation repair","Grammar to automaticity","The vocabulary engine","Pronunciation and connected speech","Speaking fluency","Advanced range: idiom and register","Interactive fluency under pressure","Mastery and the credential (C2)"])},
   {id:"hindi",name:"Hindi",group:"habit",hours:400,phases:P(C8,["Devanagari and the sound system","Core grammar","The tatsam engine: Sanskrit as a system","Output: writing and speaking","Modern literature","Medieval literature","Criticism, history and formal register","The credential"])},
-  {id:"chess",name:"Chess",group:"habit",hours:900,phases:P(["S1","S2","S3","S4","S5"],["Beginner to about 1200","About 1200 to 1600","About 1600 to 2000","About 2000 to 2300","2300 and beyond"])}
+  {id:"chess",name:"Chess",group:"habit",hours:900,phases:P(["S1","S2","S3","S4","S5"],["Beginner to about 1200","About 1200 to 1600","About 1600 to 2000","About 2000 to 2300","2300 and beyond"])},
+  {id:"astro",name:"Astrophysics & Rocket Science",group:"solve",hours:1360,phases:P(["P0","P1","P2","P3","P4","P5"],["Foundations: mechanics, the sky and light","Core astrophysics","International theory (IOAA)","The full IOAA, and rockets by hand","Mission design and propulsion in depth","Research taste"])}
 ];
 const PLAN = Object.fromEntries(PLANS.map(p=>[p.id,p]));
 const PSEUDO = {buffer:{name:"Buffer & catch-up",group:"think"}, review:{name:"Review",group:"think"}};
@@ -444,11 +445,12 @@ const YEARS = [
   [[["ipho",600]],[["agi",350],["security",150]],[["devops",40],["philosophy",210]],[["hindi",150]]],
   [[["chem",600]],[["security",450],["bio",50]],[["philosophy",250]],[["hindi",50],["bio",100]]],
   [[["chem",600]],[["bio",500]],[["philosophy",140],["geometric",110]],[["bio",150]]],
-  [[["buffer",300]],[["bio",190],["buffer",60]],[["geometric",90],["review",35]],[["bio",50],["review",25]]]
+  [[["astro",300]],[["bio",190],["astro",60]],[["geometric",90],["review",35]],[["bio",50],["review",25]]],
+  [[["astro",400]],[["astro",333]],[["astro",167]],[["astro",100]]]
 ];
 const DAY = 86400000;
 const d0 = (y,m,d)=>new Date(y,m,d).getTime();
-const START = d0(2027,0,1), SEM_END = d0(2027,6,1), END = d0(2037,0,1);
+const START = d0(2027,0,1), SEM_END = d0(2027,6,1), END = d0(2037,8,1);
 const SEGS = []; // {plan,hours,start,end,row,lane,laneLabel,phaseKey}
 function buildSlot(items,start,end,row,lane,label){
   const cap = items.reduce((s,x)=>s+x[1],0); let acc=0;
@@ -458,18 +460,19 @@ function buildSlot(items,start,end,row,lane,label){
   }
 }
 SEM_SLOTS.forEach((s,i)=>buildSlot(s.items,START,SEM_END,0,i,s.label));
+const rowSpan = i => i===9 ? [d0(2036,6,1), d0(2037,0,1)] : i===10 ? [d0(2037,0,1), END] : [d0(2027+i,6,1), d0(2028+i,6,1)];
 YEARS.forEach((yr,i)=>{
-  const s = d0(2027+i,6,1), e = i===9 ? END : d0(2028+i,6,1);
+  const [s,e] = rowSpan(i);
   yr.forEach((items,lane)=>buildSlot(items,s,e,i+1,lane,WORK_LABELS[lane]));
 });
-const ROWS = [{label:"Sprint",sub:"Jan–Jun 2027",start:START,end:SEM_END}].concat(YEARS.map((_,i)=>({label:i===9?"Final":"Year "+(i+1),sub:i===9?"Jul–Dec 2036":`Jul ${2027+i}–Jun ${2028+i}`,start:d0(2027+i,6,1),end:i===9?END:d0(2028+i,6,1)})));
+const ROWS = [{label:"Sprint",sub:"Jan–Jun 2027",start:START,end:SEM_END}].concat(YEARS.map((_,i)=>{const [s,e]=rowSpan(i);return {label:i===9?"Year 10":i===10?"Extension":"Year "+(i+1),sub:i===9?"Jul–Dec 2036":i===10?"Jan–Aug 2037":`Jul ${2027+i}–Jun ${2028+i}`,start:s,end:e}}));
 const PLANNED_TOTAL = SEGS.reduce((s,x)=>s+x.hours,0);
 const MILESTONES = [
   {lv:1,date:d0(2027,5,30),title:"Placement-ready",need:["aptitude","english"],text:"Aptitude and English done, first career plan well under way"},
   {lv:2,date:d0(2030,5,30),title:"Foundations",need:["cs","consulting","pm"],text:"Maths foundation, CS complete, both career plans done"},
   {lv:3,date:d0(2032,5,30),title:"Technical depth",need:["aiml","econ","companies","money","maths"],text:"AI/ML complete, economics and business done"},
   {lv:4,date:d0(2034,5,30),title:"Frontier",need:["ipho","quant","agi","devops","chess"],text:"Physics to olympiad level, Quant, AGI and DevOps complete"},
-  {lv:5,date:d0(2036,11,31),title:"All 21 plans",need:PLANS.map(p=>p.id),text:"Every plan's core path finished"}
+  {lv:5,date:d0(2037,7,31),title:"All 22 plans",need:PLANS.map(p=>p.id),text:"Every plan's core path finished"}
 ];
 
 /* ---------------- Helpers ---------------- */
@@ -668,7 +671,7 @@ function entryHTML(e){
     <div class="row" style="gap:2px;flex-wrap:nowrap"><button class="btn ghost" data-edit="${e.id}" aria-label="Edit session">Edit</button><button class="btn ghost danger" data-del="${e.id}" aria-label="Delete session">Delete</button></div></div>`;
 }
 function renderPlans(D){
-  const groups=[["all","All 21"]].concat(Object.entries(GROUPS).map(([k,g])=>[k,g.name]));
+  const groups=[["all","All "+PLANS.length]].concat(Object.entries(GROUPS).map(([k,g])=>[k,g.name]));
   $("#filters").innerHTML=groups.map(([k,n])=>`<button class="chip ${filterGroup===k?"on":""}" data-filter="${k}" style="font-family:var(--f-body)">${k!=="all"?`<span class="dot" style="display:inline-block;background:${GROUPS[k].color};margin-right:6px;vertical-align:middle"></span>`:""}${n}</button>`).join("");
   const now=Date.now();
   $("#planGrid").innerHTML=PLANS.filter(p=>filterGroup==="all"||p.group===filterGroup).map(p=>{
@@ -720,7 +723,7 @@ function renderJourney(D){
     ["On fire","7-day streak",D.best>=7],["Unbroken","30-day streak",D.best>=30],["Iron will","100-day streak",D.best>=100],
     ["Marathon day","10+ hours in one day",Object.values(D.byDay).some(h=>h>=10)],
     ["First boss","Finish your first phase",nPhases>=1],["Boss hunter","Finish 25 phases",nPhases>=25],
-    ["Plan cleared","Complete a whole plan",nComplete>=1],["Polymath","Complete 10 plans",nComplete>=10],["Mastery","Complete all 21",nComplete>=21],
+    ["Plan cleared","Complete a whole plan",nComplete>=1],["Polymath","Complete 10 plans",nComplete>=10],["Mastery","Complete all "+PLANS.length,nComplete>=PLANS.length],
     ["Placement-ready","Aptitude plan complete",planComplete("aptitude",D)],["Ahead of schedule","Be ahead of the plan after Jan 2027",Date.now()>START+7*DAY&&D.total>D.expected]
   ];
   $("#achCount").textContent=`${A.filter(a=>a[2]).length} of ${A.length}`;
