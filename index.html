@@ -175,7 +175,29 @@ body{margin:0}
 .auth h1{font-size:1.5rem;margin-bottom:4px}
 .link{background:none;border:0;padding:0;color:var(--accent-ink);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 #aMsg{min-height:1.2em;font-size:.88rem;color:var(--ink-2);margin:0}
-.who{display:flex;gap:10px;align-items:center;font-size:.82rem}
+.who{display:flex;gap:10px;align-items:center;font-size:.82rem;flex-wrap:wrap}
+.jstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.jstats .card{padding:14px 16px}
+.jstats .v{font-family:var(--f-display);font-size:1.35rem;font-weight:700}
+textarea.code{font-family:var(--f-mono);font-size:.82rem;min-height:90px}
+.check{display:flex;align-items:center;gap:8px;font-size:.88rem;color:var(--ink-2);flex-wrap:wrap}
+.check input[type=checkbox]{width:17px;height:17px;accent-color:var(--accent);margin:0}
+.sharelink{display:flex;gap:8px}
+.jentry{padding:16px 0;border-top:1px solid var(--line);display:grid;gap:8px}
+.jentry:first-child{border-top:0;padding-top:4px}
+.jentry h3 a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line)}
+.jentry h3 a:hover{border-color:var(--accent)}
+.jmeta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:.8rem;color:var(--ink-3)}
+.v-own{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good)}
+.v-hint{background:var(--gold-soft);color:var(--gold)}
+.v-ed{background:color-mix(in srgb,var(--think) 16%,transparent);color:var(--think)}
+.v-no{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+.tag{font-size:.74rem;padding:2px 8px;border-radius:6px;background:var(--surface-2);color:var(--ink-2)}
+.jsec{display:grid;gap:2px}
+.jsec b{font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.jsec div{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.92rem}
+.jsec.ins div{border-left:3px solid var(--accent);padding-left:10px}
+.jsec pre{margin:0;padding:10px 12px;background:var(--surface-2);border-radius:8px;overflow-x:auto;font-family:var(--f-mono);font-size:.8rem;line-height:1.5}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
 </head>
@@ -225,6 +247,7 @@ body{margin:0}
     <a href="#plans" data-view="plans">Plans</a>
     <a href="#journey" data-view="journey">Journey</a>
     <a href="#log" data-view="log">Log</a>
+    <a href="#journal" data-view="journal">Journal</a>
   </nav>
 
   <main>
@@ -294,8 +317,70 @@ body{margin:0}
         <div id="history"></div>
       </div>
     </section>
+
+    <section id="v-journal" class="grid" hidden>
+      <div class="jstats" id="jStats"></div>
+      <div class="grid today" style="align-items:start">
+        <div class="grid" style="min-width:0">
+          <div class="card pad">
+            <div class="row" style="justify-content:space-between;margin-bottom:10px">
+              <h2>Problem journal</h2>
+              <div class="row" style="gap:8px"><input class="input" id="jSearch" type="search" placeholder="Search problems, tags, notes" style="width:220px;max-width:100%"><select class="input" id="jFilter" style="width:auto"></select></div>
+            </div>
+            <div id="jList"></div>
+          </div>
+        </div>
+        <div class="grid" style="min-width:0">
+          <div class="card pad">
+            <h2 style="margin-bottom:12px" id="jFormTitle">Write up a problem</h2>
+            <form class="form" id="jForm" autocomplete="off">
+              <div class="two">
+                <div class="field"><label for="jDate">Date</label><input class="input" type="date" id="jDate" required></div>
+                <div class="field"><label for="jPlatform">Platform</label><select class="input" id="jPlatform"><option>Codeforces</option><option>LeetCode</option><option>AtCoder</option><option>CodeChef</option><option>CSES</option><option>Kaggle</option><option>Other</option></select></div>
+              </div>
+              <div class="field"><label for="jProblem">Problem</label><input class="input" id="jProblem" maxlength="200" placeholder="e.g. 1850D · Balanced Round" required></div>
+              <div class="field"><label for="jUrl">Link</label><input class="input" id="jUrl" type="url" maxlength="500" placeholder="https://codeforces.com/problemset/problem/1850/D"></div>
+              <div class="two">
+                <div class="field"><label for="jRating">Rating</label><input class="input num" id="jRating" type="number" min="0" max="5000" step="100" placeholder="1300"></div>
+                <div class="field"><label for="jMinutes">Time spent (min)</label><input class="input num" id="jMinutes" type="number" min="0" max="1440" step="5" placeholder="45"></div>
+              </div>
+              <div class="field"><label for="jVerdict">Result</label><select class="input" id="jVerdict"><option>Solved on my own</option><option>Solved with a hint</option><option>Read the editorial</option><option>Upsolved later</option><option>Not solved yet</option></select></div>
+              <div class="field"><label for="jTags">Tags</label><input class="input" id="jTags" placeholder="greedy, sorting, two pointers"></div>
+              <div class="field"><label for="jApproach">My approach</label><textarea class="input" id="jApproach" maxlength="20000" placeholder="How I thought about it, step by step. What I noticed first, what I tried."></textarea></div>
+              <div class="field"><label for="jMistakes">Mistakes and wrong turns</label><textarea class="input" id="jMistakes" maxlength="20000" placeholder="WA on test 3 because I forgot the n = 1 case; first idea was O(n²)…"></textarea></div>
+              <div class="field"><label for="jInsight">Key insight to remember</label><textarea class="input" id="jInsight" maxlength="5000" style="min-height:56px" placeholder="Sort, then the answer is the longest run with gaps ≤ k."></textarea></div>
+              <div class="field"><label for="jCode">Code or snippet (optional)</label><textarea class="input code" id="jCode" maxlength="20000" spellcheck="false" placeholder="// the core of the solution"></textarea></div>
+              <label class="check"><input type="checkbox" id="jPublic"> Show this entry on my public journal</label>
+              <label class="check"><input type="checkbox" id="jLog" checked> Also add the time spent as a session in <select class="input" id="jLogPlan" style="width:auto;padding:4px 8px;margin-left:4px"></select></label>
+              <div class="row"><button class="btn primary" type="submit" id="jSubmit">Save to journal</button><button class="btn ghost" type="button" id="jCancel" hidden>Cancel edit</button></div>
+            </form>
+          </div>
+          <div class="card pad">
+            <h2 style="margin-bottom:6px">Share your journey</h2>
+            <p class="muted" style="margin:0 0 12px;font-size:.88rem">Pick a public name to get a link anyone can open, no login needed. Only entries you mark public appear, and your hours and plans stay private.</p>
+            <form class="form" id="shareForm">
+              <div class="field"><label for="sHandle">Public name</label><input class="input" id="sHandle" maxlength="30" placeholder="suharsh" pattern="[a-z0-9_-]{3,30}" title="3–30 characters: lowercase letters, digits, - or _"></div>
+              <label class="check"><input type="checkbox" id="sPublic"> Make my public journal visible</label>
+              <div class="row"><button class="btn" type="submit">Save</button><span class="faint" style="font-size:.82rem" id="sState"></span></div>
+              <div class="sharelink" id="sLinkBox" hidden><input class="input num" id="sLink" readonly><button class="btn" type="button" id="sCopy">Copy link</button></div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 </div>
+
+<section id="publicView" class="wrap" hidden>
+  <div class="card pad" style="margin-bottom:16px">
+    <div class="brand" style="margin-bottom:10px"><i><svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true"><path d="M7 23V9l9 9 9-9v14" stroke="#2cc3cf" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></i>Mastery Quest</div>
+    <h1 id="pTitle" style="font-size:1.6rem">Problem journal</h1>
+    <p class="muted" id="pSub" style="margin:4px 0 0"></p>
+  </div>
+  <div class="jstats" id="pStats"></div>
+  <div class="card pad"><div id="pList"></div></div>
+  <p class="faint" style="text-align:center;margin-top:20px;font-size:.85rem">Keep your own journal: <a href="./" style="color:var(--accent-ink)">sign up for Mastery Quest</a>.</p>
+</section>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -447,7 +532,12 @@ async function reload(){
   const {data:ph,error:pe}=await sb.from("phase_done").select("key,done_on");
   if(pe){banner("Couldn't load your phases. Reload the page.");return}
   entries=all; progress={done:Object.fromEntries((ph||[]).map(r=>[r.key,r.done_on]))};
-  banner(""); fillPhase($("#fPhase").value); render();
+  const uidv=session.user.id;
+  const {data:jr,error:je}=await sb.from("journal").select("*").eq("user_id",uidv).order("date",{ascending:false}).limit(5000);
+  const {data:pf}=await sb.from("profiles").select("handle,display_name,is_public").eq("user_id",uidv).maybeSingle();
+  if(je){banner("Couldn't load your journal. Reload the page.")} else { journal=jr||[]; banner("") }
+  profile=pf||null;
+  fillPhase($("#fPhase").value); fillShare(); render();
 }
 
 /* ---------------- Derived numbers ---------------- */
@@ -482,6 +572,7 @@ function render(){
   if(view==="plans") renderPlans(D);
   if(view==="journey") renderJourney(D);
   if(view==="log") renderLog(D);
+  if(view==="journal") renderJournal();
 }
 function renderPlayer(D){
   const L=levelOf(D.total), lo=hoursFor(L), hi=hoursFor(L+1), f=(D.total-lo)/(hi-lo);
@@ -699,8 +790,104 @@ document.addEventListener("change",e=>{
   progress={done:{...progress.done}}; savePhase(k); render();
 });
 
+/* ---------------- Problem journal ---------------- */
+let journal=[], profile=null, jEditing=null;
+const VERDICT_CLASS={"Solved on my own":"v-own","Solved with a hint":"v-hint","Read the editorial":"v-ed","Upsolved later":"v-hint","Not solved yet":"v-no"};
+const safeUrl=u=>/^https?:\/\//i.test(u||"")?u:"";
+function jStatsHTML(list){
+  const own=list.filter(j=>j.verdict==="Solved on my own"), rated=list.filter(j=>j.rating&&j.verdict!=="Not solved yet");
+  const avg=rated.length?Math.round(rated.reduce((s,j)=>s+j.rating,0)/rated.length):0, best=rated.length?Math.max(...rated.map(j=>j.rating)):0;
+  const mins=list.reduce((s,j)=>s+(j.minutes||0),0), month=todayStr().slice(0,7), thisMonth=list.filter(j=>String(j.date).startsWith(month)).length;
+  const tags={}; list.forEach(j=>(j.tags||[]).forEach(t=>tags[t]=(tags[t]||0)+1)); const top=Object.entries(tags).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]).join(", ");
+  const tile=(l,v,s)=>`<div class="card"><div class="label">${l}</div><div class="v num">${v}</div><div class="faint" style="font-size:.8rem">${s}</div></div>`;
+  return tile("Problems",list.length,`${thisMonth} this month`)+tile("Solved alone",list.length?Math.round(100*own.length/list.length)+"%":"–",`${own.length} problems`)+tile("Avg rating",avg||"–",best?`hardest ${best}`:"add ratings")+tile("Time thinking",fmtH(Math.round(mins/6)/10)+" h",top?esc("top: "+top):"no tags yet");
+}
+function jEntryHTML(j,own){
+  const url=safeUrl(j.url), sec=(t,v,cls)=>v?`<div class="jsec ${cls||""}"><b>${t}</b><div>${esc(v)}</div></div>`:"";
+  return `<article class="jentry"><div class="jmeta"><span>${fmtDay(j.date)}</span><span>·</span><span>${esc(j.platform)}</span>${j.rating?`<span class="pill num">${j.rating}</span>`:""}${j.verdict?`<span class="pill ${VERDICT_CLASS[j.verdict]||""}">${esc(j.verdict)}</span>`:""}${j.minutes?`<span>${j.minutes} min</span>`:""}${own&&j.is_public?`<span class="pill" style="background:var(--accent-soft);color:var(--accent-ink)">Public</span>`:""}</div>
+    <h3>${url?`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(j.problem)}</a>`:esc(j.problem)}</h3>
+    ${(j.tags||[]).length?`<div class="row" style="gap:5px">${j.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`:""}
+    ${sec("Approach",j.approach)}${sec("Mistakes and wrong turns",j.mistakes)}${sec("Key insight",j.insight,"ins")}
+    ${j.code?`<div class="jsec"><b>Code</b><pre>${esc(j.code)}</pre></div>`:""}
+    ${own?`<div class="row" style="gap:2px"><button class="btn ghost" data-jedit="${esc(j.id)}">Edit</button><button class="btn ghost danger" data-jdel="${esc(j.id)}">Delete</button></div>`:""}</article>`;
+}
+function renderJournal(){
+  $("#jStats").innerHTML=jStatsHTML(journal);
+  const fs=$("#jFilter"), cur=fs.value||"all";
+  fs.innerHTML=`<option value="all">All results</option>`+Object.keys(VERDICT_CLASS).map(v=>`<option>${v}</option>`).join(""); fs.value=cur;
+  const q=$("#jSearch").value.trim().toLowerCase();
+  const list=journal.filter(j=>(cur==="all"||j.verdict===cur)&&(!q||[j.problem,j.platform,(j.tags||[]).join(" "),j.approach,j.mistakes,j.insight].join(" ").toLowerCase().includes(q)));
+  $("#jList").innerHTML=list.length?list.map(j=>jEntryHTML(j,true)).join(""):`<div class="empty"><b>${journal.length?"No matches":"Your journal is empty"}</b>${journal.length?"Try another search or result filter.":"After each problem, write how you approached it, where you went wrong and the one idea to remember. In a year you'll be able to see exactly how your thinking changed."}</div>`;
+}
+function fillJPlans(sel){ $("#jLogPlan").innerHTML=PLANS.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join(""); $("#jLogPlan").value=sel||"cs"; }
+function resetJForm(){ jEditing=null; $("#jForm").reset(); $("#jDate").value=todayStr(); $("#jLog").checked=true; fillJPlans(); $("#jSubmit").textContent="Save to journal"; $("#jCancel").hidden=true; $("#jFormTitle").textContent="Write up a problem"; $("#jLog").closest(".check").hidden=false; }
+function fillShare(){
+  $("#sHandle").value=profile&&profile.handle||""; $("#sPublic").checked=!!(profile&&profile.is_public);
+  const link=profile&&profile.handle?location.origin+location.pathname+"?u="+profile.handle:"";
+  $("#sLinkBox").hidden=!(link&&profile.is_public); $("#sLink").value=link;
+  $("#sState").textContent=profile&&profile.handle?(profile.is_public?"Public":"Private: only you can see it"):"";
+}
+$("#jSearch").addEventListener("input",renderJournal);
+$("#jFilter").addEventListener("change",renderJournal);
+$("#jCancel").addEventListener("click",resetJForm);
+$("#jForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const url=$("#jUrl").value.trim(); if(url&&!safeUrl(url)){toast("Links must start with http:// or https://");return}
+  const num=v=>v===""?null:Math.round(+v);
+  const row={id:jEditing?jEditing.id:("j"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)),date:$("#jDate").value,platform:$("#jPlatform").value,problem:$("#jProblem").value.trim(),url:url||null,
+    rating:num($("#jRating").value),minutes:num($("#jMinutes").value),verdict:$("#jVerdict").value,tags:[...new Set($("#jTags").value.split(",").map(t=>t.trim().toLowerCase()).filter(Boolean))].slice(0,12),
+    approach:$("#jApproach").value.trim()||null,mistakes:$("#jMistakes").value.trim()||null,insight:$("#jInsight").value.trim()||null,code:$("#jCode").value||null,is_public:$("#jPublic").checked};
+  if(!row.problem){toast("Give the problem a name.");return}
+  const btn=$("#jSubmit"); btn.disabled=true;
+  const res = jEditing? await sb.from("journal").update(row).eq("id",row.id) : await sb.from("journal").insert({...row,user_id:session.user.id});
+  btn.disabled=false;
+  if(res.error){console.error(res.error);toast("Couldn't save the entry. Check your connection and try again.");return}
+  const wasEdit=!!jEditing;
+  journal = wasEdit? journal.map(j=>j.id===row.id?{...j,...row}:j) : [row].concat(journal);
+  journal.sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
+  if(!wasEdit && $("#jLog").checked && row.minutes>0){
+    const plan=$("#jLogPlan").value;
+    addEntry({id:"e"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),date:row.date,plan,phase:defaultPhase(plan),hours:Math.round(row.minutes/60*100)/100||0.25,note:`${row.platform}: ${row.problem} (${row.verdict})`,ts:Date.now()});
+  }
+  toast(wasEdit?"Entry updated":"Saved to your journal"); resetJForm(); render();
+});
+document.addEventListener("click",async e=>{
+  const ed=e.target.closest("[data-jedit]"), dl=e.target.closest("[data-jdel]");
+  if(ed){ const j=journal.find(x=>x.id===ed.dataset.jedit); if(!j) return; jEditing=j;
+    $("#jDate").value=j.date; $("#jPlatform").value=j.platform; $("#jProblem").value=j.problem; $("#jUrl").value=j.url||""; $("#jRating").value=j.rating??""; $("#jMinutes").value=j.minutes??"";
+    $("#jVerdict").value=j.verdict||"Solved on my own"; $("#jTags").value=(j.tags||[]).join(", "); $("#jApproach").value=j.approach||""; $("#jMistakes").value=j.mistakes||""; $("#jInsight").value=j.insight||""; $("#jCode").value=j.code||""; $("#jPublic").checked=!!j.is_public;
+    $("#jLog").closest(".check").hidden=true; $("#jSubmit").textContent="Save changes"; $("#jCancel").hidden=false; $("#jFormTitle").textContent="Edit entry"; $("#jForm").scrollIntoView({behavior:"smooth",block:"start"}); }
+  if(dl){ if(!dl.dataset.armed){dl.dataset.armed="1";dl.textContent="Confirm";setTimeout(()=>{if(dl.isConnected){delete dl.dataset.armed;dl.textContent="Delete"}},3000);return}
+    const id=dl.dataset.jdel; const {error}=await sb.from("journal").delete().eq("id",id); if(error){toast("Couldn't delete it. Try again.");return}
+    journal=journal.filter(j=>j.id!==id); toast("Entry deleted"); renderJournal(); }
+});
+$("#shareForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const handle=$("#sHandle").value.trim().toLowerCase();
+  if(!/^[a-z0-9_-]{3,30}$/.test(handle)){toast("Use 3–30 lowercase letters, digits, - or _.");return}
+  const row={user_id:session.user.id,handle,display_name:displayName()||null,is_public:$("#sPublic").checked};
+  const {error}=await sb.from("profiles").upsert(row);
+  if(error){toast(error.code==="23505"?"That name is taken. Try another.":"Couldn't save. Try again.");return}
+  profile=row; fillShare(); toast(row.is_public?"Your journal is public":"Saved. Your journal stays private");
+});
+$("#sCopy").addEventListener("click",async()=>{ try{await navigator.clipboard.writeText($("#sLink").value);toast("Link copied")}catch(_){ $("#sLink").select() } });
+async function showPublic(handle){
+  $("#auth").hidden=true; document.querySelector(".wrap:not(#publicView)").hidden=true; $("#publicView").hidden=false;
+  const h=String(handle).toLowerCase();
+  if(!sb||!/^[a-z0-9_-]{3,30}$/.test(h)){ $("#pTitle").textContent="Journal not found"; $("#pList").parentElement.hidden=true; return }
+  const {data:pf}=await sb.from("profiles").select("user_id,handle,display_name").eq("handle",h).eq("is_public",true).maybeSingle();
+  if(!pf){ $("#pTitle").textContent="This journal is private or doesn't exist"; $("#pSub").textContent="Check the link with the person who shared it."; $("#pList").parentElement.hidden=true; return }
+  const {data:list}=await sb.from("journal").select("*").eq("user_id",pf.user_id).eq("is_public",true).order("date",{ascending:false}).limit(2000);
+  const items=list||[]; const first=items.length?items[items.length-1].date:null;
+  document.title=(pf.display_name||pf.handle)+"'s journal · Mastery Quest";
+  $("#pTitle").textContent=(pf.display_name||pf.handle)+"'s problem journal";
+  $("#pSub").textContent=items.length?`${items.length} problems written up${first?" since "+fmtD(parse(first)):""}: how each one was approached, where it went wrong, and what was learned.`:"No public entries yet.";
+  $("#pStats").innerHTML=jStatsHTML(items);
+  $("#pList").innerHTML=items.length?items.map(j=>jEntryHTML(j,false)).join(""):`<div class="empty"><b>Nothing shared yet</b>Check back soon.</div>`;
+}
+
 /* ---------------- Routing ---------------- */
-const VIEWS=["today","plans","journey","log"];
+const VIEWS=["today","plans","journey","log","journal"];
 function go(v){ if(location.hash!=="#"+v) location.hash=v; else show(v) }
 function show(v){
   view=VIEWS.includes(v)?v:"today";
@@ -713,7 +900,9 @@ window.addEventListener("hashchange",()=>show(location.hash.slice(1)));
 /* ---------------- Boot ---------------- */
 $("#fDate").value=todayStr();
 fillPlanSelect();
-show(location.hash.slice(1));
+resetJForm();
+const PUBLIC_HANDLE=new URLSearchParams(location.search).get("u");
+if(!PUBLIC_HANDLE) show(location.hash.slice(1));
 function banner(msg){const b=$("#banner"); if(msg){b.innerHTML=msg;b.classList.add("show")} else b.classList.remove("show")}
 /* ---------------- Auth ---------------- */
 function displayName(){const n=session&&session.user&&(session.user.user_metadata||{}).name; return n?String(n).slice(0,40):""}
@@ -728,7 +917,7 @@ function setAuthMode(m){
   $("#aPass").autocomplete = m==="login"?"current-password":"new-password";
   $("#aMsg").textContent="";
 }
-function showAuth(on){ $("#auth").hidden=!on; document.querySelector(".wrap").hidden=on; }
+function showAuth(on){ $("#auth").hidden=!on; document.querySelector(".wrap:not(#publicView)").hidden=on; }
 $("#auth").addEventListener("click",e=>{const b=e.target.closest("[data-am]"); if(b) setAuthMode(b.dataset.am)});
 $("#authForm").addEventListener("submit",async e=>{
   e.preventDefault(); if(!sb) return;
@@ -743,13 +932,14 @@ $("#authForm").addEventListener("submit",async e=>{
   } finally { btn.disabled=false; }
 });
 $("#logout").addEventListener("click",async()=>{await sb.auth.signOut()});
-if(!sb){ showAuth(true); setAuthMode("login"); $("#aMsg").textContent="Couldn't load the sign-in service. Check your connection and reload the page."; }
+if(PUBLIC_HANDLE){ showPublic(PUBLIC_HANDLE); }
+else if(!sb){ showAuth(true); setAuthMode("login"); $("#aMsg").textContent="Couldn't load the sign-in service. Check your connection and reload the page."; }
 else{
   setAuthMode("login");
   sb.auth.onAuthStateChange((event,s)=>{
     if(event==="PASSWORD_RECOVERY"){ session=s; showAuth(true); setAuthMode("newpass"); return }
     const was=session&&session.user&&session.user.id; session=s;
-    if(!s){ entries=[]; progress={done:{}}; showAuth(true); if(authMode==="newpass") setAuthMode("login"); return }
+    if(!s){ entries=[]; progress={done:{}}; journal=[]; profile=null; showAuth(true); if(authMode==="newpass") setAuthMode("login"); return }
     if(authMode!=="newpass") showAuth(false);
     $("#who").textContent=s.user.email||"";
     if(was!==s.user.id) setTimeout(()=>{ reload(); render(); },0);

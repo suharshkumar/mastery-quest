@@ -7,3 +7,14 @@ create policy "own entries" on public.entries for all to authenticated using (au
 create policy "own phases" on public.phase_done for all to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
 revoke all on public.entries, public.phase_done from anon;
 grant select, insert, update, delete on public.entries, public.phase_done to authenticated;
+create table if not exists public.profiles (user_id uuid primary key default auth.uid() references auth.users(id) on delete cascade, handle text unique check (handle ~ '^[a-z0-9_-]{3,30}$'), display_name text check (char_length(display_name) <= 40), is_public boolean not null default false);
+create table if not exists public.journal (id text primary key, user_id uuid not null default auth.uid() references auth.users(id) on delete cascade, date date not null, platform text not null check (char_length(platform) <= 30), problem text not null check (char_length(problem) <= 200), url text check (char_length(url) <= 500), rating int check (rating between 0 and 5000), tags text[] not null default '{}', verdict text check (char_length(verdict) <= 40), minutes int check (minutes between 0 and 1440), approach text check (char_length(approach) <= 20000), mistakes text check (char_length(mistakes) <= 20000), insight text check (char_length(insight) <= 5000), code text check (char_length(code) <= 20000), is_public boolean not null default false, created_at timestamptz not null default now());
+create index if not exists journal_user_date on public.journal (user_id, date);
+alter table public.profiles enable row level security;
+alter table public.journal enable row level security;
+create policy "own profile" on public.profiles for all to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "public profiles" on public.profiles for select to anon, authenticated using (is_public);
+create policy "own journal" on public.journal for all to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "public journal" on public.journal for select to anon, authenticated using (is_public and exists (select 1 from public.profiles p where p.user_id = journal.user_id and p.is_public));
+grant select, insert, update, delete on public.profiles, public.journal to authenticated;
+grant select on public.profiles, public.journal to anon;
